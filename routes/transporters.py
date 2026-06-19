@@ -47,7 +47,7 @@ async def delete_transporter(transporter_id: str, current_user: dict = Depends(g
 @router.get("/transporters/{transporter_id}/users")
 async def get_transporter_users(transporter_id: str, current_user: dict = Depends(get_current_user)):
     """Get all users for a transporter"""
-    await check_permission(current_user, "Transporters (View)")
+    await check_permission(current_user, "Transporter Users (View)")
     transporter = await db.transporters.find_one({"id": transporter_id}, {"_id": 0})
     if not transporter:
         raise HTTPException(status_code=404, detail="Transporter not found")
@@ -56,7 +56,7 @@ async def get_transporter_users(transporter_id: str, current_user: dict = Depend
 @router.post("/transporters/{transporter_id}/users")
 async def add_transporter_user(transporter_id: str, user_data: dict, current_user: dict = Depends(get_current_user)):
     """Add a new user to a transporter"""
-    await check_permission(current_user, "Transporters (Update)")
+    await check_permission(current_user, "Transporter Users (Create)")
     transporter = await db.transporters.find_one({"id": transporter_id})
     if not transporter:
         raise HTTPException(status_code=404, detail="Transporter not found")
@@ -95,7 +95,7 @@ async def add_transporter_user(transporter_id: str, user_data: dict, current_use
 @router.put("/transporters/{transporter_id}/users/{user_id}")
 async def update_transporter_user(transporter_id: str, user_id: str, user_data: dict, current_user: dict = Depends(get_current_user)):
     """Update a user in a transporter"""
-    await check_permission(current_user, "Transporters (Update)")
+    await check_permission(current_user, "Transporter Users (Update)")
     transporter = await db.transporters.find_one({"id": transporter_id})
     if not transporter:
         raise HTTPException(status_code=404, detail="Transporter not found")
@@ -120,7 +120,7 @@ async def update_transporter_user(transporter_id: str, user_id: str, user_data: 
 @router.delete("/transporters/{transporter_id}/users/{user_id}")
 async def delete_transporter_user(transporter_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a user from a transporter"""
-    await check_permission(current_user, "Transporters (Delete)")
+    await check_permission(current_user, "Transporter Users (Delete)")
     result = await db.transporters.update_one(
         {"id": transporter_id},
         {"$pull": {"users": {"id": user_id}}}

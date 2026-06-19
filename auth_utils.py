@@ -52,7 +52,7 @@ async def check_permission(user: dict, permission_key: str):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # Admin always has all permissions
+    # Management always has all permissions
     if user.get("role") == "Management":
         return True
     

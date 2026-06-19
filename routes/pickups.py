@@ -145,6 +145,10 @@ async def get_pickups(
     end_date: Optional[str] = None,
     status: Optional[str] = None,
     depot_id: Optional[str] = None,
+    truck_number: Optional[str] = None,
+    transporter_name: Optional[str] = None,
+    driver_mobile: Optional[str] = None,
+    company_name: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=10, le=500),
     current_user: dict = Depends(get_current_user)
@@ -170,10 +174,26 @@ async def get_pickups(
             query["date"]["$lte"] = end_date
 
     if status:
-        query["status"] = status
+        statuses = [s.strip() for s in status.split(",")]
+        if len(statuses) == 1:
+            query["status"] = statuses[0]
+        else:
+            query["status"] = {"$in": statuses}
 
     if depot_id:
         query["depot_id"] = depot_id
+
+    if truck_number:
+        query["truck_number"] = {"$regex": truck_number, "$options": "i"}
+
+    if transporter_name:
+        query["transporter_name"] = {"$regex": transporter_name, "$options": "i"}
+
+    if driver_mobile:
+        query["driver_phone"] = {"$regex": driver_mobile}
+
+    if company_name:
+        query["company_name"] = {"$regex": company_name, "$options": "i"}
 
     skip = (page - 1) * page_size
 
@@ -208,11 +228,11 @@ async def update_pickup_transporter(
     if not pickup:
         raise HTTPException(404, "Pickup not found")
 
-    # only loaded pickups editable
-    if pickup.get("status") != "loaded":
+    # only loaded / weightment_done pickups editable
+    if pickup.get("status") not in ("loaded", "weightment_done", "final_verified"):
         raise HTTPException(
             status_code=400,
-            detail="Only loaded pickups can be updated"
+            detail="Only loaded, weightment_done, or final_verified pickups can be updated"
         )
 
     await db.pickups.update_one(
@@ -251,11 +271,11 @@ async def update_pickup_company(
     if not pickup:
         raise HTTPException(404, "Pickup not found")
 
-    # only loaded pickups editable
-    if pickup.get("status") != "loaded":
+    # only loaded / weightment_done pickups editable
+    if pickup.get("status") not in ("loaded", "weightment_done", "final_verified"):
         raise HTTPException(
             status_code=400,
-            detail="Only loaded pickups can be updated"
+            detail="Only loaded, weightment_done, or final_verified pickups can be updated"
         )
 
     await db.pickups.update_one(
@@ -714,3 +734,290 @@ async def get_pickup(pickup_id: str):
         raise HTTPException(404, "Pickup not found")
 
     return pickup
+
+
+# ================================
+# WEIGHTMENT (LOADED WEIGHT + SLIP)
+# ================================
+class WeightmentPayload(BaseModel):
+    loaded_weight_mt: Optional[float] = None
+    weightment_slip_file_id: Optional[str] = None
+    status: Optional[str] = None
+
+
+@router.put("/pickups/{pickup_id}/weightment")
+async def save_weightment(
+    pickup_id: str,
+    payload: WeightmentPayload,
+    current_user: dict = Depends(get_current_user)
+):
+    await check_permission(current_user, "Verify Pickup")
+
+    pickup = await db.pickups.find_one({"id": pickup_id})
+    if not pickup:
+        raise HTTPException(404, "Pickup not found")
+
+    if pickup.get("status") not in ("loaded", "weightment_done"):
+        raise HTTPException(400, "Only loaded pickups can record weightment")
+
+    update = {}
+
+    if payload.loaded_weight_mt is not None:
+        update["loaded_weight_mt"] = payload.loaded_weight_mt
+
+    if payload.weightment_slip_file_id is not None:
+        update["weightment_slip_file_id"] = payload.weightment_slip_file_id
+
+    if payload.status:
+        update["status"] = payload.status
+
+    if not update:
+        raise HTTPException(400, "No fields to update")
+
+    await db.pickups.update_one(
+        {"id": pickup_id},
+        {"$set": update}
+    )
+
+    # ================================
+    # CREATE VERIFIED TRUCK ENTRY (only on weightment_done)
+    # ================================
+    if update.get("status") == "weightment_done":
+        now = datetime.now(timezone.utc).isoformat()
+        weight = payload.loaded_weight_mt or pickup.get("loaded_weight_mt")
+
+        # Update pickup with verification timestamp
+        await db.pickups.update_one(
+            {"id": pickup_id},
+            {"$set": {
+                "verified_at": now,
+                "verified_by": current_user["id"],
+                "verified_by_name": current_user["name"],
+                "weight_mt": weight
+            }}
+        )
+
+        truck_no = pickup.get("truck_number") or pickup.get("vehicle_number") or ""
+
+        existing = await db.verified_trucks.find_one({"pickup_id": pickup_id})
+        if not existing:
+            verified_truck = {
+                "id": str(uuid.uuid4()),
+                "date": pickup.get("date"),
+                "truck_no": truck_no,
+                "transporter": pickup.get("transporter_name") or "",
+                "driver_mobile": pickup.get("driver_mobile") or "",
+                "company": pickup.get("purchase_order_company_name") or pickup.get("company_name") or "",
+                "product": pickup.get("product_name") or "",
+                "product_id": pickup.get("product_id") or "",
+                "po_number": pickup.get("purchase_order_no") or "",
+                "po_date": "",
+                "depot": pickup.get("depot_name") or "",
+                "depot_id": pickup.get("depot_id") or "",
+                "weight": weight,
+                "verified_by": current_user["name"],
+                "tare_slip_file_id": pickup.get("tare_slip_file_id"),
+                "weightment_slip_file_id": payload.weightment_slip_file_id,
+                "invoice_details": None,
+                "invoice_added": False,
+                "shipping_details": None,
+                "shipping_added": False,
+                "pickup_id": pickup_id,
+                "created_at": now
+            }
+            await db.verified_trucks.insert_one(verified_truck)
+        else:
+            await db.verified_trucks.update_one(
+                {"pickup_id": pickup_id},
+                {"$set": {
+                    "weight": weight,
+                    "weightment_slip_file_id": payload.weightment_slip_file_id,
+                    "tare_slip_file_id": pickup.get("tare_slip_file_id"),
+                    "transporter": pickup.get("transporter_name") or "",
+                    "company": pickup.get("purchase_order_company_name") or pickup.get("company_name") or "",
+                    "product": pickup.get("product_name") or "",
+                    "depot": pickup.get("depot_name") or "",
+                }}
+            )
+
+        # ================================
+        # DEDUCT FROM DEPOT INVENTORY
+        # ================================
+        depot_id = pickup.get("depot_id")
+        product_id = pickup.get("product_id")
+        if depot_id and product_id and weight:
+            depot_name = pickup.get("depot_name") or ""
+            product_name = pickup.get("product_name") or ""
+            if not depot_name:
+                depot = await db.depots.find_one({"id": depot_id})
+                depot_name = depot.get("name", "") if depot else ""
+            await update_depot_inventory(
+                depot_id=depot_id,
+                depot_name=depot_name,
+                product_id=product_id,
+                product_name=product_name,
+                product_code="",
+                quantity_change=float(weight),
+                is_incoming=False,
+                company_id=current_user.get("company_id")
+            )
+
+    return {"message": "Weightment saved successfully"}
+
+
+# ================================
+# FINAL VERIFY PICKUP
+# ================================
+@router.put("/pickups/{pickup_id}/final-verify")
+async def final_verify_pickup(
+    pickup_id: str,
+    payload: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    await check_permission(current_user, "Final Dispatch Verification")
+
+    pickup = await db.pickups.find_one({"id": pickup_id})
+    if not pickup:
+        raise HTTPException(404, "Pickup not found")
+
+    if pickup.get("status") == "final_verified":
+        raise HTTPException(400, "Pickup already final verified")
+
+    if pickup.get("status") != "weightment_done":
+        raise HTTPException(400, "Only weightment done pickups can be final verified")
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    # update pickup with PO details
+    po_update = {
+        "status": "final_verified",
+        "final_verified_at": now,
+        "final_verified_by": current_user["id"],
+        "final_verified_by_name": current_user["name"]
+    }
+
+    if payload.get("purchase_order_id"):
+        po_update["purchase_order_id"] = payload["purchase_order_id"]
+    if payload.get("purchase_order_no"):
+        po_update["purchase_order_no"] = payload["purchase_order_no"]
+    if payload.get("purchase_order_company_name"):
+        po_update["purchase_order_company_name"] = payload["purchase_order_company_name"]
+    if payload.get("product_id"):
+        po_update["product_id"] = payload["product_id"]
+    if payload.get("product_name"):
+        po_update["product_name"] = payload["product_name"]
+    if payload.get("depot_id"):
+        po_update["depot_id"] = payload["depot_id"]
+    if payload.get("depot_name"):
+        po_update["depot_name"] = payload["depot_name"]
+
+    await db.pickups.update_one(
+        {"id": pickup_id},
+        {"$set": po_update}
+    )
+
+    # ================================
+    # UPDATE VERIFIED TRUCK ENTRY
+    # ================================
+    loaded_weight = payload.get("loaded_weight_mt") or pickup.get("loaded_weight_mt")
+    verified_truck_update = {
+        "company": payload.get("purchase_order_company_name") or pickup.get("purchase_order_company_name") or pickup.get("company_name") or "",
+        "product": payload.get("product_name") or pickup.get("product_name") or "",
+        "product_id": payload.get("product_id") or pickup.get("product_id") or "",
+        "po_number": payload.get("po_number") or payload.get("purchase_order_no") or pickup.get("purchase_order_no") or "",
+        "po_date": payload.get("po_date") or "",
+        "depot": payload.get("depot_name") or pickup.get("depot_name") or "",
+        "depot_id": payload.get("depot_id") or pickup.get("depot_id") or "",
+        "weight": loaded_weight,
+        "transporter": payload.get("transporter_name") or pickup.get("transporter_name") or "",
+        "verified_by": current_user["name"]
+    }
+
+    existing_vt = await db.verified_trucks.find_one({"pickup_id": pickup_id})
+    if existing_vt:
+        await db.verified_trucks.update_one(
+            {"pickup_id": pickup_id},
+            {"$set": verified_truck_update}
+        )
+    else:
+        # create if missing (e.g. legacy data)
+        truck_no = pickup.get("truck_number") or pickup.get("vehicle_number") or ""
+        vt_entry = {
+            "id": str(uuid.uuid4()),
+            "date": pickup.get("date"),
+            "truck_no": truck_no,
+            "transporter": verified_truck_update["transporter"],
+            "driver_mobile": pickup.get("driver_mobile") or "",
+            "company": verified_truck_update["company"],
+            "product": verified_truck_update["product"],
+            "product_id": verified_truck_update["product_id"],
+            "po_number": verified_truck_update["po_number"],
+            "po_date": verified_truck_update["po_date"],
+            "depot": verified_truck_update["depot"],
+            "depot_id": verified_truck_update["depot_id"],
+            "weight": loaded_weight,
+            "verified_by": current_user["name"],
+            "tare_slip_file_id": pickup.get("tare_slip_file_id"),
+            "weightment_slip_file_id": pickup.get("weightment_slip_file_id"),
+            "invoice_details": None,
+            "invoice_added": False,
+            "shipping_details": None,
+            "shipping_added": False,
+            "pickup_id": pickup_id,
+            "created_at": now
+        }
+        await db.verified_trucks.insert_one(vt_entry)
+
+    # ================================
+    # UPDATE PURCHASE ORDER DISPATCHED QTY
+    # ================================
+    po_id = payload.get("purchase_order_id")
+    if po_id and loaded_weight:
+        po = await db.purchase_orders.find_one({"id": po_id})
+        if po:
+            dispatched = float(po.get("dispatched_quantity_mt") or 0)
+            total = float(po.get("total_quantity_mt") or 0)
+            new_dispatched = dispatched + float(loaded_weight)
+            new_remaining = total - new_dispatched
+
+            new_status = po.get("status")
+            if po.get("status") != "Completed":
+                if new_dispatched <= 0:
+                    new_status = "Open"
+                else:
+                    new_status = "In Progress"
+
+            await db.purchase_orders.update_one(
+                {"id": po_id},
+                {
+                    "$set": {
+                        "dispatched_quantity_mt": round(new_dispatched, 2),
+                        "remaining_quantity_mt": round(new_remaining, 2),
+                        "status": new_status
+                    }
+                }
+            )
+
+    # ================================
+    # DEDUCT FROM DEPOT INVENTORY
+    # ================================
+    depot_id = payload.get("depot_id") or pickup.get("depot_id")
+    product_id = payload.get("product_id") or pickup.get("product_id")
+    if depot_id and product_id and loaded_weight:
+        depot_name = payload.get("depot_name") or pickup.get("depot_name") or ""
+        product_name = payload.get("product_name") or pickup.get("product_name") or ""
+        if not depot_name:
+            depot = await db.depots.find_one({"id": depot_id})
+            depot_name = depot.get("name", "") if depot else ""
+        await update_depot_inventory(
+            depot_id=depot_id,
+            depot_name=depot_name,
+            product_id=product_id,
+            product_name=product_name,
+            product_code="",
+            quantity_change=float(loaded_weight),
+            is_incoming=False,
+            company_id=current_user.get("company_id")
+        )
+
+    return {"message": "Pickup final verified successfully"}

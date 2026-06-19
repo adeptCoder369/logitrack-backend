@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from database import db
-from auth_utils import get_current_user, check_permission, get_user_depot_ids, build_product_filter, check_product_access
+from auth_utils import get_current_user, check_permission, get_user_depot_ids, build_product_filter, check_product_access, check_depot_access, build_depot_filter
 from models import Depot, DepotCreate, DepotInventory
 
 router = APIRouter(tags=["Depots"])
@@ -63,7 +63,9 @@ async def delete_depot(depot_id: str, current_user: dict = Depends(get_current_u
 
 @router.get("/depot-inventory/{depot_id}")
 async def get_depot_inventory(depot_id: str, current_user: dict = Depends(get_current_user)):
-    await check_permission(current_user, "Inventory Wallet")
+    await check_permission(current_user, "Inventory Wallet (View)")
+    # Check depot access
+    await check_depot_access(current_user, depot_id)
     # Build query with product filter
     query = {"depot_id": depot_id}
     product_filter = await build_product_filter(current_user, "product_id")
@@ -74,9 +76,11 @@ async def get_depot_inventory(depot_id: str, current_user: dict = Depends(get_cu
 
 @router.get("/depot-inventory")
 async def get_all_depot_inventory(current_user: dict = Depends(get_current_user)):
-    await check_permission(current_user, "Inventory Wallet")
-    # Build query with product filter
+    await check_permission(current_user, "Inventory Wallet (View)")
+    # Build query with product and depot filters
     query = await build_product_filter(current_user, "product_id")
+    depot_filter = await build_depot_filter(current_user, "depot_id")
+    query.update(depot_filter)
     
     inventory = await db.depot_inventory.find(query, {"_id": 0}).to_list(1000)
     return inventory
@@ -91,9 +95,10 @@ async def get_inventory_ledger(
 ):
     """Get transaction ledger for a specific depot/product combination with optional date filter"""
     
-    await check_permission(current_user, "Inventory Wallet")
+    await check_permission(current_user, "Inventory Wallet (View)")
     
-    # Check product access
+    # Check depot and product access
+    await check_depot_access(current_user, depot_id)
     await check_product_access(current_user, product_id)
     
     # Build date query for incoming
@@ -119,7 +124,7 @@ async def get_inventory_ledger(
     outgoing_liftings = await db.liftings.find(outgoing_query, {"_id": 0}).sort("date_of_loading", -1).to_list(1000)
 
     verified_pickups_query = {
-        "status": "verified",
+        "status": {"$in": ["verified", "weightment_done", "final_verified"]},
         "depot_id": depot_id,
         "product_id": product_id
     }
@@ -169,7 +174,7 @@ async def get_inventory_ledger(
             "type": "OUT",
             "date": txn_date,
             "lifting_no": pickup.get("purchase_order_no") or "PICKUP",
-            "quantity": pickup.get("weight_mt", 0),
+            "quantity": pickup.get("loaded_weight_mt") or pickup.get("weight_mt", 0),
 
             "to": pickup.get("purchase_order_company_name")
                   or pickup.get("company_name"),

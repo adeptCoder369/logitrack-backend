@@ -37,88 +37,98 @@ COUNTRY_CODES = {
 # Permission defaults — (View) controls sidebar/route access; (Create/Update/Delete) control action buttons
 PERMISSION_DEFAULTS = {
     # Dashboard
-    "Dashboard": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
+    "Dashboard": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
 
     # Delivery Orders
-    "Delivery Orders (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Delivery Orders (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Delivery Orders (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Delivery Orders (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Delivery Orders (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Delivery Orders (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Delivery Orders (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Delivery Orders (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
     # Liftings
-    "Liftings (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
-    "Liftings (Create)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
-    "Liftings (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Liftings (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Primary Liftings (Create)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": False, "Depot Staff": False},
-    "Secondary Liftings (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
+    "Liftings (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Liftings (Create)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Liftings (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False, "Depot Supervisor": False},
+    "Liftings (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Primary Liftings (Create)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Secondary Liftings (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
 
     # Pickups
-    "Schedule Pickup": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": False, "Depot Staff": False},
-    "Pickup (Execution)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
-    "Verify Pickup": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False},
+    "Schedule Pickup": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Pickup (Execution)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Verify Pickup": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False, "Depot Supervisor": True},
 
     # Verification (Unloading)
-    "Verification (Unloading)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False},
+    "Verification (Unloading)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False, "Depot Supervisor": True},
 
     # Wallets
-    "Inventory Wallet": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "DO Wallet": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": False, "Depot Staff": False},
+    "Inventory Wallet (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "DO Wallet (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
     # Reports
-    "Company Reports": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Lifting Reports": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
+    "Company Reports": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Lifting Reports": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
 
     # Master Data — View (sidebar/route)
-    "Trucks (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
-    "Trucks (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Trucks (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Trucks (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Trucks (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Trucks (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Trucks (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Trucks (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
-    "Companies (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Companies (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Companies (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Companies (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Companies (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Companies (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Companies (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Companies (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
-    "Transporters (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Transporters (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Transporters (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Transporters (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Company Users (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Company Users (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Company Users (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Company Users (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
-    "Products (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Products (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Products (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Products (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Transporters (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Transporters (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Transporters (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Transporters (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
-    "Depots (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Depots (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Depots (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Depots (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Transporter Users (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Transporter Users (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Transporter Users (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Transporter Users (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+
+    "Products (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Products (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Products (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Products (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+
+    "Depots (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Depots (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Depots (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Depots (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
     # Verified Trucks Details
-    "Verified Trucks Details (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Verified Trucks Details (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False},
-    "Verified Trucks Details (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False},
-    "Verified Trucks Details (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Verified Trucks Details (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Verified Trucks Details (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False, "Depot Supervisor": False},
+    "Verified Trucks Details (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": True, "Depot Staff": False, "Depot Supervisor": False},
+    "Verified Trucks Details (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
-    "Railway Sidings (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
-    "Railway Sidings (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Railway Sidings (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Railway Sidings (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Railway Sidings (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Railway Sidings (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Railway Sidings (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Railway Sidings (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
-    "Railway Zones (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
-    "Railway Zones (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Railway Zones (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Railway Zones (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Railway Zones (View)": {"Admin": True, "Management": True, "Loader": True, "Depot Manager": True, "Depot Staff": True, "Depot Supervisor": True},
+    "Railway Zones (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Railway Zones (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Railway Zones (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
     # Purchase Orders
-    "Purchase Orders (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Purchase Orders (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Purchase Orders (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Purchase Orders (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "Purchase Orders (View)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Purchase Orders (Create)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Purchase Orders (Update)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Purchase Orders (Delete)": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 
     # Admin
-    "User Management": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Role Permissions": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Analytics": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
+    "User Management": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Role Permissions": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
+    "Analytics": {"Admin": True, "Management": True, "Loader": False, "Depot Manager": False, "Depot Staff": False, "Depot Supervisor": False},
 }

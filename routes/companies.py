@@ -71,15 +71,14 @@ async def get_company_purchase_orders(
 @router.get("/companies/{company_id}/users")
 async def get_company_users(company_id: str, current_user: dict = Depends(get_current_user)):
     """Get all users for a specific company"""
-    await check_permission(current_user, "Companies (View)")
+    await check_permission(current_user, "Company Users (View)")
     users = await db.company_users.find({"company_id": company_id}, {"_id": 0}).to_list(100)
     return users
 
 @router.post("/companies/{company_id}/users", response_model=CompanyUser)
 async def add_company_user(company_id: str, data: CompanyUserCreate, current_user: dict = Depends(get_current_user)):
     """Add a user to a company"""
-    await check_permission(current_user, "Companies (Update)")
-    # Verify company exists
+    await check_permission(current_user, "Company Users (Create)")
     company = await db.companies.find_one({"id": company_id})
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -91,7 +90,7 @@ async def add_company_user(company_id: str, data: CompanyUserCreate, current_use
 @router.put("/companies/{company_id}/users/{user_id}", response_model=CompanyUser)
 async def update_company_user(company_id: str, user_id: str, data: CompanyUserCreate, current_user: dict = Depends(get_current_user)):
     """Update a company user"""
-    await check_permission(current_user, "Companies (Update)")
+    await check_permission(current_user, "Company Users (Update)")
     await db.company_users.update_one(
         {"id": user_id, "company_id": company_id}, 
         {"$set": data.model_dump()}
@@ -104,7 +103,7 @@ async def update_company_user(company_id: str, user_id: str, data: CompanyUserCr
 @router.delete("/companies/{company_id}/users/{user_id}")
 async def delete_company_user(company_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a company user"""
-    await check_permission(current_user, "Companies (Delete)")
+    await check_permission(current_user, "Company Users (Delete)")
     result = await db.company_users.delete_one({"id": user_id, "company_id": company_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")

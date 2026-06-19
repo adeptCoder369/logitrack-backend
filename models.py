@@ -93,6 +93,7 @@ class UserLogin(BaseModel):
 class CompanyBase(BaseModel):
     name: str
     trade_name: Optional[str] = None
+    logo_file_id: Optional[str] = None
     location: Optional[str] = None
     city: Optional[str] = None
     district: Optional[str] = None
@@ -274,6 +275,14 @@ class ShippingDetails(BaseModel):
     currency: str = 'INR'
 
 
+class PackingListDetails(BaseModel):
+    packing_list_no: Optional[str] = None
+    packing_list_date: Optional[str] = None
+    remarks: Optional[str] = None
+    file_id: Optional[str] = None
+    fileName: Optional[str] = None
+
+
 class VerifiedTruckBase(BaseModel):
     date: str
     truck_no: str
@@ -294,6 +303,8 @@ class VerifiedTruckBase(BaseModel):
     invoice_details: Optional[InvoiceDetails] = None
     shipping_added: bool = False
     shipping_details: Optional[ShippingDetails] = None
+    packing_list_added: bool = False
+    packing_list_details: Optional[PackingListDetails] = None
 
 
 class VerifiedTruckCreate(VerifiedTruckBase):
@@ -344,8 +355,11 @@ class DeliveryOrderBase(BaseModel):
     product_name: Optional[str] = None
     product_code: Optional[str] = None
     total_quantity_mt: float
+    destination_type: str = "Depot"
     to_depot_id: Optional[str] = None
     to_depot_name: Optional[str] = None
+    to_company_id: Optional[str] = None
+    to_company_name: Optional[str] = None
     loading_siding_id: Optional[str] = None
     loading_siding_name: Optional[str] = None
     loading_siding_code: Optional[str] = None
@@ -487,7 +501,7 @@ class PickupBase(BaseModel):
     tare_slip_file_id: Optional[str] = None
     original_schedule_date: Optional[str] = None
     reschedule_count: int = 0
-    status: str = "scheduled"  # scheduled | loading_started | loaded | rescheduled | verified
+    status: str = "scheduled"  # scheduled | loading_started | loaded | weightment_done | final_verified | verified | rescheduled | rejected
 
 
 class PickupCreate(PickupBase):
@@ -522,3 +536,12 @@ class Pickup(PickupBase):
 
     weight_mt: Optional[float] = None
     weight_slips: List[str] = []
+
+    # weightment (loaded weight + slip)
+    loaded_weight_mt: Optional[float] = None
+    weightment_slip_file_id: Optional[str] = None
+
+    # final verification
+    final_verified_by: Optional[str] = None
+    final_verified_by_name: Optional[str] = None
+    final_verified_at: Optional[str] = None

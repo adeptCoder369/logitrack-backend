@@ -55,7 +55,7 @@ async def get_datewise_lifting_report(
     # Get total count for pagination
     lifting_count = await db.liftings.count_documents(query)
 
-    pickup_query = {"status": "verified"}
+    pickup_query = {"status": {"$in": ["verified", "weightment_done", "final_verified"]}}
     if date_from or date_to:
         pickup_date_query = {}
         if date_from:
@@ -86,7 +86,7 @@ async def get_datewise_lifting_report(
             **pickup,
             "lifting_type": "Pickup",
             "lifting_no": pickup.get("purchase_order_no") or pickup.get("purchase_order_id") or pickup.get("id"),
-            "quantity_mt": pickup.get("weight_mt", 0),
+            "quantity_mt": pickup.get("loaded_weight_mt") or pickup.get("weight_mt", 0),
             "transport_mode": "Road",
             "vehicle_number": pickup.get("truck_number"),
             "loading_point_name": pickup.get("depot_name"),
@@ -211,7 +211,7 @@ async def export_datewise_lifting_report(
     
     if format == "excel":
         # Add verified pickups into export too so export matches the report rows
-        pickup_query = {"status": "verified"}
+        pickup_query = {"status": {"$in": ["verified", "weightment_done", "final_verified"]}}
         if date_from or date_to:
             pickup_date_query = {}
             if date_from:
@@ -232,7 +232,7 @@ async def export_datewise_lifting_report(
                 **pickup,
                 "lifting_type": "Pickup",
                 "lifting_no": pickup.get("purchase_order_no") or pickup.get("purchase_order_id") or pickup.get("id"),
-                "quantity_mt": pickup.get("weight_mt", 0),
+                "quantity_mt": pickup.get("loaded_weight_mt") or pickup.get("weight_mt", 0),
                 "transport_mode": "Road",
                 "vehicle_number": pickup.get("truck_number"),
                 "loading_point_name": pickup.get("depot_name"),

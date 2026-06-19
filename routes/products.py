@@ -11,9 +11,6 @@ router = APIRouter(tags=["Products"])
 @router.post("/products", response_model=Product)
 async def create_product(data: ProductCreate, current_user: dict = Depends(get_current_user)):
     await check_permission(current_user, "Products (Create)")
-    # Only Management can create products
-    if current_user.get("role") != "Management":
-        raise HTTPException(status_code=403, detail="Only Management can create products")
     
     product = Product(**data.model_dump())
     await db.products.insert_one(product.model_dump())
@@ -55,9 +52,6 @@ async def get_product(product_id: str, current_user: dict = Depends(get_current_
 @router.put("/products/{product_id}", response_model=Product)
 async def update_product(product_id: str, data: ProductCreate, current_user: dict = Depends(get_current_user)):
     await check_permission(current_user, "Products (Update)")
-    # Only Management can update products
-    if current_user.get("role") != "Management":
-        raise HTTPException(status_code=403, detail="Only Management can update products")
     
     await db.products.update_one({"id": product_id}, {"$set": data.model_dump()})
     return await db.products.find_one({"id": product_id}, {"_id": 0})
@@ -65,9 +59,6 @@ async def update_product(product_id: str, data: ProductCreate, current_user: dic
 @router.delete("/products/{product_id}")
 async def delete_product(product_id: str, current_user: dict = Depends(get_current_user)):
     await check_permission(current_user, "Products (Delete)")
-    # Only Management can delete products
-    if current_user.get("role") != "Management":
-        raise HTTPException(status_code=403, detail="Only Management can delete products")
     
     await db.products.delete_one({"id": product_id})
     return {"message": "Product deleted"}

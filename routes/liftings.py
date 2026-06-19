@@ -502,9 +502,9 @@ async def reject_lifting_unload(
                     }
                 )
 
-        if lifting.get("lifting_type") == "Secondary" and lifting.get("loading_point_type") == "Depot":
+        # Reverse depot inventory for Secondary liftings (stock returned to depot)
+        if lifting.get("lifting_type") == "Secondary" and lifting.get("loading_point_type") == "Depot" and lifting.get("loading_point_id"):
             depot = await db.depots.find_one({"id": lifting["loading_point_id"]})
-
             if depot:
                 await update_depot_inventory(
                     depot_id=lifting["loading_point_id"],
@@ -513,26 +513,23 @@ async def reject_lifting_unload(
                     product_name=lifting.get("product_name") or "",
                     product_code=lifting.get("product_code") or "",
                     quantity_change=lifting.get("quantity_mt", 0),
-                    is_incoming=True,  # reverse stock
+                    is_incoming=True,  # stock returned to depot
                     company_id=lifting.get("company_id")
                 )
 
-        # Reverse DO quantities if this is a Primary lifting with a DO
-        if lifting.get("lifting_type") == "Primary" and lifting.get("delivery_order_id"):
-            do = await db.delivery_orders.find_one({"id": lifting["delivery_order_id"]})
-            if do:
-                rejected_qty = lifting.get("quantity_mt", 0)
-                new_lifted = max(0, do.get("lifted_quantity_mt", 0) - rejected_qty)
-                new_remaining = do.get("total_quantity_mt", 0) - new_lifted
-                new_status = "Open" if new_lifted == 0 else "In Progress"
-                
-                await db.delivery_orders.update_one(
-                    {"id": lifting["delivery_order_id"]},
-                    {"$set": {
-                        "lifted_quantity_mt": max(0, new_lifted),
-                        "remaining_quantity_mt": max(0, new_remaining),
-                        "status": new_status
-                    }}
+        # Reverse depot inventory for Primary liftings to Depot (rejected before verification)
+        if lifting.get("lifting_type") == "Primary" and lifting.get("unloading_point_type") == "Depot" and lifting.get("unloading_point_id"):
+            depot = await db.depots.find_one({"id": lifting["unloading_point_id"]})
+            if depot:
+                await update_depot_inventory(
+                    depot_id=lifting["unloading_point_id"],
+                    depot_name=lifting.get("unloading_point_name") or depot.get("name", ""),
+                    product_id=lifting.get("product_id") or "",
+                    product_name=lifting.get("product_name") or "",
+                    product_code=lifting.get("product_code") or "",
+                    quantity_change=lifting.get("quantity_mt", 0),
+                    is_incoming=False,  # remove stock from depot
+                    company_id=lifting.get("company_id")
                 )
 
         await db.liftings.update_one(

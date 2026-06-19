@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 
 from database import db
-from auth_utils import get_current_user, check_permission, build_product_filter, check_product_access
+from auth_utils import get_current_user, check_permission, build_product_filter, build_depot_filter, check_product_access
 from models import DeliveryOrder, DeliveryOrderCreate
 
 router = APIRouter(tags=["Delivery Orders"])
@@ -35,8 +35,11 @@ async def get_delivery_orders(status: Optional[str] = None, current_user: dict =
     # Check permission for viewing delivery orders
     await check_permission(current_user, "Delivery Orders (View)")
     
-    # Build query with product filter
+    # Apply product and depot filters
     query = await build_product_filter(current_user, "product_id")
+    depot_filter = await build_depot_filter(current_user, "to_depot_id")
+    query.update(depot_filter)
+    
     if status:
         query["status"] = status
     

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Body
 from typing import List, Optional
 
 from database import db
-from auth_utils import get_current_user, check_permission, build_product_filter, check_product_access
+from auth_utils import get_current_user, check_permission, build_product_filter, build_depot_filter, check_product_access, check_depot_access
 from models import PurchaseOrder, PurchaseOrderCreate
 
 router = APIRouter(tags=["Purchase Orders"])
@@ -22,24 +22,6 @@ async def create_purchase_order(
     # Product access check
     if data.product_id:
         await check_product_access(current_user, data.product_id)
-
-    # 🔴 CRITICAL: Check depot inventory
-    inventory = await db.depot_inventory.find_one({
-        "depot_id": data.depot_id,
-        "product_id": data.product_id
-    })
-
-    if not inventory:
-        raise HTTPException(
-            status_code=400,
-            detail="No inventory found for this product in selected depot"
-        )
-
-#    if inventory.get("available_quantity", 0) < data.total_quantity_mt:
-#        raise HTTPException(
-#            status_code=400,
-#            detail=f"Insufficient stock. Available: {inventory.get('available_quantity', 0)} MT"
-#        )
 
     # Generate PO number
     count = await db.purchase_orders.count_documents({})
@@ -66,9 +48,11 @@ async def get_purchase_orders(
 ):
     await check_permission(current_user, "Purchase Orders (View)")
 
-    # Apply product filter (same as DO)
+    # Apply product and depot filters
     query = await build_product_filter(current_user, "product_id")
-
+    depot_filter = await build_depot_filter(current_user, "depot_id")
+    query.update(depot_filter)
+    
     if status:
         query["status"] = status
 
@@ -237,7 +221,7 @@ async def get_purchase_order_statement(
     pickups = await db.pickups.find(
         {
             "purchase_order_id": order_id,
-            "status": "verified"
+            "status": {"$in": ["verified", "weightment_done", "final_verified"]}
         },
         {"_id": 0}
     ).sort("verified_at", -1).to_list(1000)
@@ -250,7 +234,7 @@ async def get_purchase_order_statement(
     for p in pickups:
 
         transactions.append({
-            "date": p.get("verified_at"),
+            "date": p.get("verified_at") or p.get("date"),
 
             "type": "Pickup",
 
@@ -261,7 +245,7 @@ async def get_purchase_order_statement(
                 p.get("truck_number"),
 
             "quantity":
-                p.get("weight_mt", 0),
+                p.get("loaded_weight_mt") or p.get("weight_mt") or 0,
 
             "status":
                 p.get("status"),
@@ -280,7 +264,7 @@ async def get_purchase_order_statement(
 
         transactions.append({
             "date":
-                l.get("date_of_loading"),
+                l.get("date_of_loading") or l.get("created_at"),
 
             "type":
                 "Lifting",

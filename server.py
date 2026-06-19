@@ -329,16 +329,18 @@ class RailwaySiding(RailwaySidingBase):
 
 # Delivery Order (Master Record)
 class DeliveryOrderBase(BaseModel):
-    transport_mode: str = "Road"  # "Road" or "Railway"
+    transport_mode: str = "Road"
     from_company_id: Optional[str] = None
     from_company_name: Optional[str] = None
     product_id: Optional[str] = None
     product_name: Optional[str] = None
     product_code: Optional[str] = None
     total_quantity_mt: float
+    destination_type: str = "Depot"
     to_depot_id: Optional[str] = None
     to_depot_name: Optional[str] = None
-    # Railway-specific fields
+    to_company_id: Optional[str] = None
+    to_company_name: Optional[str] = None
     loading_siding_id: Optional[str] = None
     loading_siding_name: Optional[str] = None
     loading_siding_code: Optional[str] = None
@@ -452,517 +454,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
-
-# ============ PERMISSION HELPERS ============
-
-# Define DEFAULT_PERMISSIONS here so it can be used by helper functions
-PERMISSION_DEFAULTS = {
-    "Dashboard": {"Management": True, "Admin": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
-    "Delivery Orders (View)": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Delivery Orders (Create)": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Primary Liftings (Create)": {"Management": True, "Admin": True, "Loader": True, "Depot Manager": False, "Depot Staff": False},
-    "Primary Liftings (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": True,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Primary Liftings (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Primary Liftings (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Secondary Liftings (Create)": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Secondary Liftings (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Staff": True
-    },
-    "Secondary Liftings (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Staff": False
-    },
-    "Secondary Liftings (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Verification (Unloading)": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": True, "Depot Staff": False},
-    "Inventory Wallet": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Inventory Wallet (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Staff": True
-    },
-    "Inventory Wallet (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Staff": False
-    },
-    "Inventory Wallet (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "DO Wallet": {"Management": True, "Admin": True, "Loader": True, "Depot Manager": False, "Depot Staff": False},
-    "DO Wallet (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": True,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "DO Wallet (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Company Reports": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": True, "Depot Staff": True},
-    "Companies": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Companies (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Companies (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Companies (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Companies (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Transporters": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Trucks": {"Management": True, "Admin": True, "Loader": True, "Depot Manager": False, "Depot Staff": False},
-    "Trucks (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": True,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Trucks (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Trucks (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Trucks (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Railway Sidings (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": True,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Railway Sidings (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Railway Sidings (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Railway Sidings (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Products": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Depots": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "User Management": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Role Permissions": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Analytics": {"Management": True, "Admin": True, "Loader": False, "Depot Manager": False, "Depot Staff": False},
-    "Liftings": {"Management": True, "Admin": True, "Loader": True, "Depot Manager": True, "Depot Staff": True},
-}
-PERMISSION_DEFAULTS.update({
-    "Delivery Orders (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Delivery Orders (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Liftings (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": True,
-        "Depot Manager": True,
-        "Depot Staff": True
-    },
-    "Liftings (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Staff": False
-    },
-    "Liftings (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Inventory Wallet (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Staff": True
-    },
-    "Inventory Wallet (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Staff": False
-    },
-    "Inventory Wallet (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Companies (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Companies (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Companies (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Transporters (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Transporters (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Transporters (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Transporters (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Trucks (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": True,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Trucks (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Trucks (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Trucks (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Products (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Products (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Products (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Products (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Depots (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Depots (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Depots (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Depots (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "User Management (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "User Management (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "User Management (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "User Management (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Purchase Orders (View)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Purchase Orders (Create)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Purchase Orders (Update)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    },
-    "Purchase Orders (Delete)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": False,
-        "Depot Staff": False
-    }
-})
-PERMISSION_DEFAULTS.update({
-    "Schedule Pickup": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Supervisor": True,
-        "Depot Staff": False
-    },
-    "Pickup (Execution)": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": True,
-        "Depot Manager": True,
-        "Depot Supervisor": True,
-        "Depot Staff": False
-    },
-    "Verify Pickup": {
-        "Management": True, 
-        "Admin": True,
-        "Loader": False,
-        "Depot Manager": True,
-        "Depot Supervisor": True,
-        "Depot Staff": False
-    }
-})
-
-
-
-async def fetch_permissions():
-    """Get current permissions from database"""
-    perm_doc = await db.permissions.find_one({"id": "role_permissions"}, {"_id": 0})
-    if not perm_doc:
-        return PERMISSION_DEFAULTS
-    return perm_doc.get("permissions", PERMISSION_DEFAULTS)
-
-async def check_permission(user: dict, permission_key: str):
-    """Check if user has a specific permission"""
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Management always has all permissions
-    if user.get("role") == "Management":
-        return True
-    
-    permissions = await fetch_permissions()
-    has_permission = permissions.get(permission_key, {}).get(user.get("role"), False)
-    
-    if not has_permission:
-        raise HTTPException(
-            status_code=403, 
-            detail=f"You don't have permission for: {permission_key}"
-        )
-    return True
-
-def require_permission(permission_key: str):
-    """Dependency factory for permission checking"""
-    async def permission_checker(current_user: dict = Depends(get_current_user)):
-        await check_permission(current_user, permission_key)
-        return current_user
-    return permission_checker
 
 # ============ OTP HELPERS ============
 
@@ -1972,7 +1463,7 @@ async def export_purchase_order_statement(
     pickups = await db.pickups.find(
         {
             "purchase_order_id": order_id,
-            "status": "verified"
+            "status": {"$in": ["verified", "weightment_done", "final_verified"]}
         },
         {"_id": 0}
     ).sort("verified_at", -1).to_list(1000)
@@ -1982,27 +1473,27 @@ async def export_purchase_order_statement(
     # Add pickup rows
     for p in pickups:
         transactions.append({
-            "date": p.get("verified_at"),
+            "date": p.get("verified_at") or p.get("date"),
             "type": "Pickup",
             "reference_no": p.get("purchase_order_no"),
             "vehicle": p.get("truck_number"),
-            "quantity": p.get("weight_mt", 0),
+            "quantity": p.get("loaded_weight_mt") or p.get("weight_mt") or 0,
             "status": p.get("status", "")
         })
     
     # Add lifting rows
     for l in liftings:
         transactions.append({
-            "date": l.get("date_of_loading"),
+            "date": l.get("date_of_loading") or l.get("created_at"),
             "type": "Lifting",
             "reference_no": l.get("lifting_no"),
             "vehicle": l.get("vehicle_id"),
-            "quantity": l.get("net_weight_mt", 0),
+            "quantity": l.get("net_weight_mt") or 0,
             "status": l.get("unloading_status", "")
         })
     
     # Sort by date
-    transactions.sort(key=lambda x: x.get("date", ""), reverse=True)
+    transactions.sort(key=lambda x: x.get("date") or "", reverse=True)
     
     if format == "excel":
         wb = Workbook()
@@ -2059,7 +1550,16 @@ async def export_purchase_order_statement(
         # Data rows
         row = 11
         for tx in transactions:
-            ws.cell(row=row, column=1, value=tx.get("date", "")[:10] if tx.get("date") else "")
+            tx_date = tx.get("date", "")
+            if tx_date:
+              try:
+                dt = datetime.strptime(str(tx_date)[:10], '%Y-%m-%d')
+                formatted_date = dt.strftime('%d-%m-%Y')
+              except:
+                formatted_date = str(tx_date)[:10] if tx_date else ""
+            else:
+              formatted_date = ""
+            ws.cell(row=row, column=1, value=formatted_date)
             ws.cell(row=row, column=2, value=tx.get("type", ""))
             ws.cell(row=row, column=3, value=tx.get("reference_no", ""))
             ws.cell(row=row, column=4, value=tx.get("vehicle", ""))
@@ -2095,173 +1595,288 @@ async def export_purchase_order_statement(
     
     elif format == "pdf":
         try:
-            import datetime
             from reportlab.lib.pagesizes import A4
             from reportlab.lib import colors
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib.units import inch
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Flowable
             from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-            
+
+            class ProgressBar(Flowable):
+                def __init__(self, percentage, width=120, height=16):
+                    Flowable.__init__(self)
+                    self.percentage = min(max(percentage, 0), 100)
+                    self.bar_width = width
+                    self.bar_height = height
+                    self.width = width
+                    self.height = height + 4
+
+                def draw(self):
+                    track_color = colors.HexColor('#E5E7EB')
+                    fill_color = colors.HexColor('#2563EB') if self.percentage < 100 else colors.HexColor('#059669')
+                    self.canv.setFillColor(track_color)
+                    self.canv.roundRect(0, 2, self.bar_width, self.bar_height, 3, fill=1, stroke=0)
+                    if self.percentage > 0:
+                        fill_w = self.bar_width * self.percentage / 100
+                        self.canv.setFillColor(fill_color)
+                        self.canv.roundRect(0, 2, fill_w, self.bar_height, 3, fill=1, stroke=0)
+                    self.canv.setFillColor(colors.white)
+                    self.canv.setFont('Helvetica-Bold', 8)
+                    text = f"{self.percentage:.0f}%"
+                    tw = self.canv.stringWidth(text, 'Helvetica-Bold', 8)
+                    self.canv.drawString((self.bar_width - tw) / 2, 5, text)
+
             output = io.BytesIO()
-            # Set precise, uniform margins for full presentation control
             doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=0.5*inch, rightMargin=0.5*inch, topMargin=0.5*inch, bottomMargin=0.5*inch)
             story = []
-            
+
             styles = getSampleStyleSheet()
-            
-            # Professional corporate typography layout
+
             title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontSize=18,
-                textColor=colors.black,
-                spaceAfter=4,
-                fontName='Helvetica-Bold',
-                alignment=TA_LEFT
+                'CustomTitle', parent=styles['Heading1'],
+                fontSize=18, textColor=colors.HexColor('#1E293B'),
+                spaceAfter=4, fontName='Helvetica-Bold', alignment=TA_LEFT
             )
-            
-            meta_left_style = ParagraphStyle(
-                'MetaLeft',
-                parent=styles['Normal'],
-                fontSize=10,
-                textColor=colors.HexColor('#DC2626'), # Red color matching your boss's notes
-                fontName='Helvetica-Bold',
-                leading=14
+
+            meta_sub_style = ParagraphStyle(
+                'MetaSub', parent=styles['Normal'],
+                fontSize=9, textColor=colors.HexColor('#64748B'),
+                fontName='Helvetica', leading=12
             )
-            
-            meta_right_style = ParagraphStyle(
-                'MetaRight',
-                parent=styles['Normal'],
-                fontSize=10,
-                textColor=colors.HexColor('#DC2626'), # Red color matching your boss's notes
-                fontName='Helvetica-Bold',
-                alignment=TA_RIGHT,
-                leading=14
+
+            meta_value_style = ParagraphStyle(
+                'MetaValue', parent=styles['Normal'],
+                fontSize=11, textColor=colors.HexColor('#1E293B'),
+                fontName='Helvetica-Bold', leading=15
             )
 
             table_header_style = ParagraphStyle(
-                'TableHeader',
-                parent=styles['Normal'],
-                fontSize=9,
-                textColor=colors.whitesmoke,
-                fontName='Helvetica-Bold',
-                alignment=TA_CENTER
+                'TableHeader', parent=styles['Normal'],
+                fontSize=9, textColor=colors.whitesmoke,
+                fontName='Helvetica-Bold', alignment=TA_CENTER
             )
 
             table_cell_style = ParagraphStyle(
-                'TableCell',
-                parent=styles['Normal'],
-                fontSize=9,
-                textColor=colors.HexColor('#1E293B'),
-                fontName='Helvetica',
-                alignment=TA_CENTER
-            )
-            
-            table_cell_right = ParagraphStyle(
-                'TableCellRight',
-                parent=table_cell_style,
-                alignment=TA_RIGHT,
-                fontName='Helvetica-Bold'
+                'TableCell', parent=styles['Normal'],
+                fontSize=9, textColor=colors.HexColor('#1E293B'),
+                fontName='Helvetica', alignment=TA_CENTER
             )
 
-            # 1. Main Document Title Row
-            title = Paragraph(f"Purchase Order Statement - {order.get('po_number', 'N/A')}", title_style)
+            table_cell_right = ParagraphStyle(
+                'TableCellRight', parent=table_cell_style,
+                alignment=TA_RIGHT, fontName='Helvetica-Bold'
+            )
+
+            table_cell_left = ParagraphStyle(
+                'TableCellLeft', parent=table_cell_style,
+                alignment=TA_LEFT, fontName='Helvetica'
+            )
+
+            total_row_style = ParagraphStyle(
+                'TotalRow', parent=table_cell_style,
+                fontName='Helvetica-Bold', fontSize=10,
+                textColor=colors.HexColor('#1E293B')
+            )
+
+            total_value_style = ParagraphStyle(
+                'TotalValue', parent=table_cell_right,
+                fontSize=10, fontName='Helvetica-Bold',
+                textColor=colors.HexColor('#059669')
+            )
+
+            # --- Title ---
+            display_po = order.get('client_po_number') or order.get('po_number', 'N/A')
+            title = Paragraph(f"Purchase Order Statement — {display_po}", title_style)
             story.append(title)
-            story.append(Spacer(1, 0.1*inch))
-            
-            # 2. Header Metadata (Company, Product vs Current Download Date)
-            current_date_str = datetime.datetime.now().strftime("%d/%m/%Y")
-            
-            meta_data = [
-                [
-                    Paragraph(f"Company: {order.get('to_company_name', 'N/A')}<br/>Product: {order.get('product_name', 'N/A')}", meta_left_style),
-                    Paragraph(f"Date: {current_date_str}", meta_right_style)
-                ]
+            story.append(Spacer(1, 0.15*inch))
+
+            # --- PO Info Strip ---
+            display_po_date = order.get('client_po_date') or order.get('po_date', '')
+            if display_po_date:
+              if isinstance(display_po_date, datetime):
+                formatted_po_date = display_po_date.strftime('%d-%m-%Y')
+              else:
+                try:
+                  raw = str(display_po_date)[:10]
+                  dt = datetime.strptime(raw, '%Y-%m-%d')
+                  formatted_po_date = dt.strftime('%d-%m-%Y')
+                except:
+                  formatted_po_date = str(display_po_date)[:10]
+            else:
+              formatted_po_date = "N/A"
+
+            po_info_data = [
+                [Paragraph(f"<b>PO:</b> {display_po}", meta_value_style),
+                 Paragraph(f"<b>Date:</b> {formatted_po_date}", meta_value_style),
+                 Paragraph(f"<b>Status:</b> {str(order.get('status', 'N/A')).upper()}", meta_value_style)]
             ]
-            
-            # 7.25 inches is the precise maximum width on A4 page with 0.5-inch margins
-            meta_table = Table(meta_data, colWidths=[4.25*inch, 3.0*inch])
-            meta_table.setStyle(TableStyle([
-                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            po_info_table = Table(po_info_data, colWidths=[3*inch, 2*inch, 2.25*inch])
+            po_info_table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                 ('LEFTPADDING', (0,0), (-1,-1), 0),
                 ('RIGHTPADDING', (0,0), (-1,-1), 0),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-                ('TOPPADDING', (0,0), (-1,-1), 0),
+                ('TOPPADDING', (0,0), (-1,-1), 4),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 4),
             ]))
-            story.append(meta_table)
-            story.append(Spacer(1, 0.2*inch))
-            
-            # 3. Dynamic Summary Performance Table Card
-            total_dispatch_qty = sum(t.get("quantity", 0) for t in transactions)
-            raw_po_date = order.get("po_date", "")
-            formatted_po_date = raw_po_date[:10] if raw_po_date else "N/A"
-            
-            summary_data = [
-                ["PO Number", order.get("po_number", "N/A")],
-                ["Total PO Quantity (MT)", f"{order.get('total_quantity_mt', 0)} MT"],
-                ["PO Date", formatted_po_date],
-                ["Dispatch Quantity (MT)", f"{total_dispatch_qty:.2f} MT"],
-                ["Status", str(order.get("status", "N/A")).upper()]
+            story.append(po_info_table)
+            story.append(Spacer(1, 0.08*inch))
+
+            # --- Company / Product / Date 3-column card ---
+            current_date_str = datetime.now().strftime("%d/%m/%Y")
+            bullet = "\u25CF"  # geometric shape as icon
+
+            meta_card_data = [
+                [
+                    Paragraph(
+                        f"<font color='#2563EB' size='14'>{bullet}</font> "
+                        f"<font size='9' color='#64748B'>COMPANY</font><br/>"
+                        f"<font size='11'><b>{order.get('to_company_name', 'N/A')}</b></font>",
+                        ParagraphStyle('mc1', parent=styles['Normal'], leading=16)
+                    ),
+                    Paragraph(
+                        f"<font color='#2563EB' size='14'>{bullet}</font> "
+                        f"<font size='9' color='#64748B'>PRODUCT</font><br/>"
+                        f"<font size='11'><b>{order.get('product_name', 'N/A')}</b></font>",
+                        ParagraphStyle('mc2', parent=styles['Normal'], leading=16)
+                    ),
+                    Paragraph(
+                        f"<font color='#2563EB' size='14'>{bullet}</font> "
+                        f"<font size='9' color='#64748B'>DOWNLOADED</font><br/>"
+                        f"<font size='11'><b>{current_date_str}</b></font>",
+                        ParagraphStyle('mc3', parent=styles['Normal'], leading=16, alignment=TA_RIGHT)
+                    ),
+                ]
             ]
-            
-            summary_table = Table(summary_data, colWidths=[2.5*inch, 4.75*inch])
+
+            meta_card = Table(meta_card_data, colWidths=[2.5*inch, 2.5*inch, 2.25*inch])
+            meta_card.setStyle(TableStyle([
+                ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
+                ('TOPPADDING', (0,0), (-1,-1), 10),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+                ('LEFTPADDING', (0,0), (-1,-1), 12),
+                ('RIGHTPADDING', (0,0), (-1,-1), 12),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
+            ]))
+            story.append(meta_card)
+            story.append(Spacer(1, 0.2*inch))
+
+            # --- Summary Table ---
+            total_po_qty = float(order.get('total_quantity_mt', 0))
+            total_dispatch_qty = float(order.get('dispatched_quantity_mt', 0))
+            remaining = total_po_qty - total_dispatch_qty
+            dispatched_pct = round((total_dispatch_qty / total_po_qty * 100)) if total_po_qty > 0 else 0
+
+            po_date_first = Paragraph(formatted_po_date, table_cell_left)
+            qty_cell = Paragraph(f"{total_po_qty} MT", table_cell_left)
+            dispatched_cell = Paragraph(f"{total_dispatch_qty:.2f} MT", table_cell_left)
+            remaining_cell = Paragraph(f"{max(remaining, 0):.2f} MT", table_cell_left)
+
+            if str(order.get('status', '')).lower() == 'in progress':
+                pb = ProgressBar(dispatched_pct, width=140, height=14)
+                status_info = [[
+                    pb,
+                    Paragraph(f"<b>{total_dispatch_qty:.1f}</b> / {total_po_qty:.1f} MT", table_cell_style)
+                ]]
+                status_cell = Table(status_info, colWidths=[140, 80])
+                status_cell.setStyle(TableStyle([
+                    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                    ('LEFTPADDING', (0,0), (-1,-1), 0),
+                    ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                    ('TOPPADDING', (0,0), (-1,-1), 0),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+                ]))
+            else:
+                status_val = str(order.get('status', 'N/A')).upper()
+                color = '#059669' if status_val == 'COMPLETED' else '#2563EB'
+                status_cell = Paragraph(f"<font color='{color}'><b>{status_val}</b></font>", table_cell_left)
+
+            summary_data = [
+                # ["PO Number", order.get("po_number", "N/A")],
+                ["Client PO", display_po if display_po != order.get("po_number") else "-"],
+                ["PO Date", po_date_first],
+                ["Total PO Qty (MT)", qty_cell],
+                ["Dispatched Qty (MT)", dispatched_cell],
+                ["Remaining Qty (MT)", remaining_cell],
+                ["Status", status_cell],
+            ]
+
+            summary_table = Table(summary_data, colWidths=[2.0*inch, 5.25*inch])
             summary_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#E0E7FF')), # Light indigo/blue label fill
+                ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#E0E7FF')),
                 ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                 ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, -1), 9.5),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
                 ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')) # Clean modern border color instead of pure harsh black
+                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
             ]))
-            
             story.append(summary_table)
             story.append(Spacer(1, 0.25*inch))
-            
-            # 4. Itemized Transaction Ledger Grid (Your colors, but beautiful spacing)
+
+            # --- Transaction Table ---
             table_data = [[
-                Paragraph("Date", table_header_style), 
-                Paragraph("Type", table_header_style), 
-                Paragraph("Reference", table_header_style), 
-                Paragraph("Vehicle", table_header_style), 
-                Paragraph("Quantity (MT)", table_header_style), 
+                Paragraph("Date", table_header_style),
+                Paragraph("Type", table_header_style),
+                Paragraph("Reference", table_header_style),
+                Paragraph("Vehicle", table_header_style),
+                Paragraph("Qty (MT)", table_header_style),
                 Paragraph("Status", table_header_style)
             ]]
-            
+
             for tx in transactions:
                 raw_type = tx.get("type", "")
                 display_type = "Dispatch" if raw_type == "Pickup" else raw_type
-                
+                tx_date = tx.get("date", "")
+                if tx_date:
+                  try:
+                    dt = datetime.strptime(str(tx_date)[:10], '%Y-%m-%d')
+                    formatted_tx_date = dt.strftime('%d-%m-%Y')
+                  except:
+                    formatted_tx_date = str(tx_date)[:10] if tx_date else "-"
+                else:
+                  formatted_tx_date = "-"
                 table_data.append([
-                    Paragraph(tx.get("date", "")[:10] if tx.get("date") else "-", table_cell_style),
+                    Paragraph(formatted_tx_date, table_cell_style),
                     Paragraph(display_type, table_cell_style),
-                    Paragraph(tx.get("reference_no", "-"), table_cell_style),
-                    Paragraph(tx.get("vehicle", "-"), table_cell_style),
-                    Paragraph(f"{float(tx.get('quantity', 0)):.2f}", table_cell_right),
+                    Paragraph(str(tx.get("reference_no", "-")) or "-", table_cell_style),
+                    Paragraph(str(tx.get("vehicle", "-")) or "-", table_cell_style),
+                    Paragraph(f"{float(tx.get('quantity', 0) or 0):.2f}", table_cell_right),
                     Paragraph(str(tx.get("status", "-")).capitalize(), table_cell_style)
                 ])
-            
-            # Perfect A4 layout width scaling
-            table = Table(table_data, colWidths=[1.1*inch, 1.1*inch, 1.3*inch, 1.1*inch, 1.3*inch, 1.35*inch])
+
+            # total row
+            transactions_total = sum(float(t.get("quantity", 0) or 0) for t in transactions)
+            table_data.append([
+                Paragraph("", table_cell_style),
+                Paragraph("", table_cell_style),
+                Paragraph("", table_cell_style),
+                Paragraph("<b>TOTAL</b>", total_row_style),
+                Paragraph(f"<b>{transactions_total:.2f}</b>", total_value_style),
+                Paragraph("", table_cell_style),
+            ])
+
+            table = Table(table_data, colWidths=[1.1*inch, 1.0*inch, 1.3*inch, 1.1*inch, 1.1*inch, 1.65*inch])
             table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563EB')), # Your exact vibrant blue header
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563EB')),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('TOPPADDING', (0, 0), (-1, -1), 8),    # Better inner padding
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8), # Better inner padding
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige), # Your clean exact beige backdrop background choice
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#94A3B8')), # Professional soft grid lines
+                ('TOPPADDING', (0, 0), (-1, -1), 7),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+                ('BACKGROUND', (0, 1), (-1, -2), colors.HexColor('#FEFCF3')),
+                ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#E0E7FF')),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#94A3B8')),
             ]))
-            
+
             story.append(table)
             doc.build(story)
             output.seek(0)
-            
-            filename = f"PO_Statement_{order.get('po_number', 'N/A')}.pdf"
+
+            filename = f"PO_Statement_{display_po}.pdf"
             return StreamingResponse(
                 output,
                 media_type="application/pdf",
@@ -2630,13 +2245,13 @@ async def get_dashboard_analytics(current_user: dict = Depends(get_current_user)
 
     pickup_dispatch_query = {
         **product_filter,
-        "status": "verified",
+        "status": {"$in": ["verified", "weightment_done", "final_verified"]},
         "verified_at": {"$gte": dispatch_start, "$lte": dispatch_end}
     }
     # include depot info so pickups contribute to depot-level dispatch totals
     pickup_dispatches = await db.pickups.find(
         pickup_dispatch_query,
-        {"_id": 0, "product_id": 1, "product_name": 1, "weight_mt": 1, "verified_at": 1, "depot_id": 1, "depot_name": 1}
+        {"_id": 0, "product_id": 1, "product_name": 1, "weight_mt": 1, "loaded_weight_mt": 1, "verified_at": 1, "depot_id": 1, "depot_name": 1}
     ).to_list(1000)
 
     def add_dispatch(product_id, name, qty, date_key):
@@ -2682,7 +2297,7 @@ async def get_dashboard_analytics(current_user: dict = Depends(get_current_user)
 
     for item in pickup_dispatches:
         date_value = (item.get("verified_at") or "")[:10]
-        qty = item.get("weight_mt") or 0
+        qty = item.get("loaded_weight_mt") or item.get("weight_mt") or 0
         if date_value == today_key:
             add_dispatch(item.get("product_id"), item.get("product_name"), qty, "today")
             # attribute pickup dispatch to depot if present
